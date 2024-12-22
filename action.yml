@@ -57,7 +57,7 @@ runs:
       env:
         CONFIG_FILE: ${{ inputs.config-file }}
         IMAGE: ${{ inputs.image }}
-        BOOTC_IMAGE_BUILDER_IMAGE: ${{ inputs.bootc_image_builder_image }}
+        BOOTC_IMAGE_BUILDER_IMAGE: ${{ inputs.bootc-image-builder-image }}
       run: |
         DESIRED_UID=$(id -u)
         DESIRED_GID=$(id -g)
