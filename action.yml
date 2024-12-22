@@ -1,0 +1,103 @@
+name: Bootc Image Builder
+description: Build bootc images into disk images or ISOs
+
+inputs:
+  config_file:
+    description: 'Path to the config file'
+    required: true
+  type:
+    description: 'Type of image to build (e.g. iso)'
+    required: true
+  image:
+    description: 'Name of the image (e.g. ghcr.io/myorg/myimage:latest)'
+    required: true
+  bootc_image_builder_image:
+    description: 'Name of the bootc image builder image'
+    required: false
+    default: 'quay.io/centos-bootc/bootc-image-builder:latest'
+
+outputs:
+  output_directory:
+    description: 'Directory containing the built image'
+    value: ${{ steps.set-outputs.outputs.output_directory }}
+  output_file:
+    description: 'Path to the built image'
+    value: ${{ steps.set-outputs.outputs.path }}
+  checksum_path:
+    description: 'Checksum of the built image'
+    value: ${{ steps.set-outputs.outputs.checksum_path }}
+  checksum:
+    description: 'Checksum of the built image'
+    value: ${{ steps.set-outputs.outputs.checksum }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Configure Podman
+      shell: bash
+      run: |
+        sudo mkdir -p /etc/containers
+        echo -e "[storage]\ndriver = \"overlay\"\nrunroot = \"/run/containers/storage\"\ngraphroot = \"/var/lib/containers/storage\"" \
+          | sudo tee /etc/containers/storage.conf
+
+        # workaround https://github.com/containers/podman/issues/21683
+        sudo apt install -y sqlite3
+        echo "update DBConfig set GraphDriver = 'overlay' where GraphDriver = '';" | sudo sh -c '(cd /var/lib/containers/storage && sqlite3 db.sql)'
+
+    - name: Pull Image
+      shell: bash
+      run:
+        sudo podman pull ${{ inputs.image }}
+
+    - name: Build ISO
+      if: ${{ inputs.type == 'iso' }}
+      id: build
+      shell: bash
+      env:
+        CONFIG_FILE: ${{ inputs.config_file }}
+        IMAGE: ${{ inputs.image }}
+        BOOTC_IMAGE_BUILDER_IMAGE: ${{ inputs.bootc_image_builder_image }}
+      run: |
+        DESIRED_UID=$(id -u)
+        DESIRED_GID=$(id -g)
+
+        CONFIG_FILE_EXTENSION="${CONFIG_FILE##*.}"
+        OUTPUT_DIRECTORY=./output
+        mkdir -p $OUTPUT_DIRECTORY
+
+        sudo podman run \
+          --rm \
+          --privileged \
+          --pull=newer \
+          --security-opt label=type:unconfined_t \
+          -v $CONFIG_FILE:/config.$CONFIG_FILE_EXTENSION:ro \
+          -v $OUTPUT_DIRECTORY:/output \
+          -v /var/lib/containers/storage:/var/lib/containers/storage \
+          $BOOTC_IMAGE_BUILDER_IMAGE \
+          --type iso \
+          --local \
+          --chown $DESIRED_UID:$DESIRED_GID \
+          $IMAGE
+
+          # Create a checksum of the output file, stored in the same directory
+          CHECKSUM=$(sha256sum ./output/bootiso/*.iso | awk '{print $1}')
+          echo $CHECKSUM > ./output/bootiso/CHECKSUM
+
+          echo "OUTPUT_DIRECTORY=$OUTPUT_DIRECTORY" >> $GITHUB_OUTPUT
+          echo "CHECKSUM=$CHECKSUM" >> $GITHUB_OUTPUT
+          echo "CHECKSUM_PATH=$OUTPUT_DIRECTORY/bootiso/CHECKSUM" >> $GITHUB_OUTPUT
+          echo "ISO_PATH=$(ls $OUTPUT_DIRECTORY/bootiso/*.iso)" >> $GITHUB_OUTPUT
+
+    - name: Set Outputs
+      id: set-outputs
+      shell: bash
+      env:
+        OUTPUT_DIRECTORY: ${{ steps.build.outputs.OUTPUT_DIRECTORY }}
+        CHECKSUM: ${{ steps.build.outputs.CHECKSUM }}
+        CHECKSUM_PATH: ${{ steps.build.outputs.CHECKSUM_PATH }}
+        ISO_PATH: ${{ steps.build.outputs.ISO_PATH }}
+      run: |
+        echo "output_directory=$OUTPUT_DIRECTORY" >> $GITHUB_OUTPUT
+        echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
+        echo "checksum_path=$CHECKSUM_PATH" >> $GITHUB_OUTPUT
+        echo "path=$ISO_PATH" >> $GITHUB_OUTPUT
