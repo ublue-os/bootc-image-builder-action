@@ -2,28 +2,29 @@ name: Bootc Image Builder
 description: Build bootc images into disk images or ISOs
 
 inputs:
-  config_file:
+  config-file:
     description: 'Path to the config file'
     required: true
   type:
     description: 'Type of image to build (e.g. iso)'
-    required: true
+    required: false
+    default: 'iso'
   image:
     description: 'Name of the image (e.g. ghcr.io/myorg/myimage:latest)'
     required: true
-  bootc_image_builder_image:
+  bootc-image-builder-image:
     description: 'Name of the bootc image builder image'
     required: false
     default: 'quay.io/centos-bootc/bootc-image-builder:latest'
 
 outputs:
-  output_directory:
+  output-directory:
     description: 'Directory containing the built image'
     value: ${{ steps.set-outputs.outputs.output_directory }}
-  output_file:
+  output-file:
     description: 'Path to the built image'
     value: ${{ steps.set-outputs.outputs.path }}
-  checksum_path:
+  checksum-path:
     description: 'Checksum of the built image'
     value: ${{ steps.set-outputs.outputs.checksum_path }}
   checksum:
