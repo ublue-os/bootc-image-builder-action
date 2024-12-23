@@ -21,7 +21,7 @@ outputs:
   output-directory:
     description: 'Directory containing the built image'
     value: ${{ steps.set-outputs.outputs.output_directory }}
-  output-file:
+  output-path:
     description: 'Path to the built image'
     value: ${{ steps.set-outputs.outputs.path }}
   checksum-path:
@@ -79,18 +79,19 @@ runs:
           --chown $DESIRED_UID:$DESIRED_GID \
           $IMAGE
 
-          # Create a checksum of the output file, stored in the same directory
-          CHECKSUM=$(sha256sum ./output/bootiso/*.iso | awk '{print $1}')
-          echo $CHECKSUM > ./output/bootiso/CHECKSUM
+          ISO_PATH=$(ls ./output/bootiso/*.iso)
 
-          ISO_PATH=$(ls $OUTPUT_DIRECTORY/bootiso/*.iso)
+          # Create a checksum of the output file, stored in the same directory
+          CHECKSUM=$(sha256sum $ISO_PATH | awk '{print $1}')
+          CHECKSUM_PATH=${ISO_PATH}-CHECKSUM
+          echo $CHECKSUM > ${CHECKSUM_PATH}
 
           # Get the parent directory of the ISO
           OUTPUT_DIRECTORY=$(dirname $ISO_PATH)
 
           echo "OUTPUT_DIRECTORY=$OUTPUT_DIRECTORY" >> $GITHUB_OUTPUT
           echo "CHECKSUM=$CHECKSUM" >> $GITHUB_OUTPUT
-          echo "CHECKSUM_PATH=$OUTPUT_DIRECTORY/CHECKSUM" >> $GITHUB_OUTPUT
+          echo "CHECKSUM_PATH=$CHECKSUM_PATH" >> $GITHUB_OUTPUT
           echo "ISO_PATH=$ISO_PATH" >> $GITHUB_OUTPUT
 
     - name: Set Outputs
