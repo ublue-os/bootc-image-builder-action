@@ -83,14 +83,15 @@ runs:
 
           # Create a checksum of the output file, stored in the same directory
           CHECKSUM=$(sha256sum $ISO_PATH | awk '{print $1}')
-          echo $CHECKSUM > $ISO_PATH-CHECKSUM
+          CHECKSUM_PATH=${ISO_PATH}-CHECKSUM
+          echo $CHECKSUM > ${CHECKSUM_PATH}
 
           # Get the parent directory of the ISO
           OUTPUT_DIRECTORY=$(dirname $ISO_PATH)
 
           echo "OUTPUT_DIRECTORY=$OUTPUT_DIRECTORY" >> $GITHUB_OUTPUT
           echo "CHECKSUM=$CHECKSUM" >> $GITHUB_OUTPUT
-          echo "CHECKSUM_PATH=$OUTPUT_DIRECTORY/CHECKSUM" >> $GITHUB_OUTPUT
+          echo "CHECKSUM_PATH=$CHECKSUM_PATH" >> $GITHUB_OUTPUT
           echo "ISO_PATH=$ISO_PATH" >> $GITHUB_OUTPUT
 
     - name: Set Outputs
