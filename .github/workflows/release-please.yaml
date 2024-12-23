@@ -10,7 +10,7 @@ permissions:
   packages: write
   pull-requests: write
 
-name: Generate Changelog
+name: Generate Releases
 jobs:
   release-please:
     runs-on: ubuntu-latest
