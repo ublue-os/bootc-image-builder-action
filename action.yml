@@ -79,7 +79,7 @@ runs:
           --chown $DESIRED_UID:$DESIRED_GID \
           $IMAGE
 
-          ISO_PATH=$(ls $OUTPUT_DIRECTORY/bootiso/*.iso)
+          ISO_PATH=$(ls ./output/bootiso/*.iso)
 
           # Create a checksum of the output file, stored in the same directory
           CHECKSUM=$(sha256sum $ISO_PATH | awk '{print $1}')
