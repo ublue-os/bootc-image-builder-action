@@ -21,7 +21,7 @@ outputs:
   output-directory:
     description: 'Directory containing the built image'
     value: ${{ steps.set-outputs.outputs.output_directory }}
-  output-file:
+  output-path:
     description: 'Path to the built image'
     value: ${{ steps.set-outputs.outputs.path }}
   checksum-path:
