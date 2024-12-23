@@ -63,8 +63,7 @@ runs:
         DESIRED_GID=$(id -g)
 
         CONFIG_FILE_EXTENSION="${CONFIG_FILE##*.}"
-        OUTPUT_DIRECTORY=./output
-        mkdir -p $OUTPUT_DIRECTORY
+        mkdir -p ./output
 
         sudo podman run \
           --rm \
@@ -72,7 +71,7 @@ runs:
           --pull=newer \
           --security-opt label=type:unconfined_t \
           -v $CONFIG_FILE:/config.$CONFIG_FILE_EXTENSION:ro \
-          -v $OUTPUT_DIRECTORY:/output \
+          -v ./output:/output \
           -v /var/lib/containers/storage:/var/lib/containers/storage \
           $BOOTC_IMAGE_BUILDER_IMAGE \
           --type iso \
@@ -84,10 +83,15 @@ runs:
           CHECKSUM=$(sha256sum ./output/bootiso/*.iso | awk '{print $1}')
           echo $CHECKSUM > ./output/bootiso/CHECKSUM
 
+          ISO_PATH=$(ls $OUTPUT_DIRECTORY/bootiso/*.iso)
+
+          # Get the parent directory of the ISO
+          OUTPUT_DIRECTORY=$(dirname $ISO_PATH)
+
           echo "OUTPUT_DIRECTORY=$OUTPUT_DIRECTORY" >> $GITHUB_OUTPUT
           echo "CHECKSUM=$CHECKSUM" >> $GITHUB_OUTPUT
-          echo "CHECKSUM_PATH=$OUTPUT_DIRECTORY/bootiso/CHECKSUM" >> $GITHUB_OUTPUT
-          echo "ISO_PATH=$(ls $OUTPUT_DIRECTORY/bootiso/*.iso)" >> $GITHUB_OUTPUT
+          echo "CHECKSUM_PATH=$OUTPUT_DIRECTORY/CHECKSUM" >> $GITHUB_OUTPUT
+          echo "ISO_PATH=$ISO_PATH" >> $GITHUB_OUTPUT
 
     - name: Set Outputs
       id: set-outputs
