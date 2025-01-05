@@ -1,8 +1,6 @@
-# `@centos-workstation/bootc-image-builder-action`
+# `@ublue-os/bootc-image-builder-action`
 
-Build bootc images into disk images or ISOs.
-
-Currently only ISOs are supported, but contributions are welcome.
+Build bootc images into disk images or ISOs. Currently only ISOs are supported, but contributions are welcome.
 
 ## Usage
 
