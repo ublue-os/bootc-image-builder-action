@@ -76,7 +76,6 @@ runs:
           $BOOTC_IMAGE_BUILDER_IMAGE \
           --type iso \
           --local \
-          --use-librepo=True \
           --chown $DESIRED_UID:$DESIRED_GID \
           $IMAGE
 
