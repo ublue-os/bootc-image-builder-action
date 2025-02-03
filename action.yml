@@ -16,6 +16,10 @@ inputs:
     description: 'Name of the bootc image builder image'
     required: false
     default: 'quay.io/centos-bootc/bootc-image-builder:latest'
+  use-librepo:
+    description: 'Use librepo for downloading packages for the output image. (can break if you are using an old bib image)'
+    required: false
+    default: false
 
 outputs:
   output-directory:
@@ -58,12 +62,17 @@ runs:
         CONFIG_FILE: ${{ inputs.config-file }}
         IMAGE: ${{ inputs.image }}
         BOOTC_IMAGE_BUILDER_IMAGE: ${{ inputs.bootc-image-builder-image }}
+        USE_LIBREPO: ${{ inputs.use-librepo }}
       run: |
         DESIRED_UID=$(id -u)
         DESIRED_GID=$(id -g)
 
         CONFIG_FILE_EXTENSION="${CONFIG_FILE##*.}"
         mkdir -p ./output
+        
+        if [ "$USE_LIBREPO" != "false" ] ; then
+          USE_LIBREPO="--use-librepo=True"
+        fi
 
         sudo podman run \
           --rm \
@@ -77,7 +86,7 @@ runs:
           --type iso \
           --local \
           --chown $DESIRED_UID:$DESIRED_GID \
-          $IMAGE
+          $USE_LIBREPO $IMAGE
 
           ISO_PATH=$(ls ./output/bootiso/*.iso)
 
