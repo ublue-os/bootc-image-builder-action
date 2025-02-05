@@ -70,8 +70,9 @@ runs:
         CONFIG_FILE_EXTENSION="${CONFIG_FILE##*.}"
         mkdir -p ./output
         
-        if [ "$USE_LIBREPO" != "false" ] ; then
-          USE_LIBREPO="--use-librepo=True"
+        USE_LIBREPO_FLAG=""
+        if [[ "$USE_LIBREPO" == "true" ]]; then
+          USE_LIBREPO_FLAG="--use-librepo=True"
         fi
 
         sudo podman run \
@@ -86,7 +87,8 @@ runs:
           --type iso \
           --local \
           --chown $DESIRED_UID:$DESIRED_GID \
-          $USE_LIBREPO $IMAGE
+          $USE_LIBREPO_FLAG \
+          $IMAGE
 
           ISO_PATH=$(ls ./output/bootiso/*.iso)
 
