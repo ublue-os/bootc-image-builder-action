@@ -71,7 +71,7 @@ runs:
         mkdir -p ./output
         
         USE_LIBREPO_FLAG=""
-        [[ "$USE_LIBREPO" == "true" ]]; then
+        if [[ "$USE_LIBREPO" == "true" ]]; then
           USE_LIBREPO_FLAG="--use-librepo=True"
         fi
 
