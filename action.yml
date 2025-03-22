@@ -6,7 +6,7 @@ inputs:
     description: 'Path to the config file'
     required: true
   type:
-    description: 'Type of image to build (e.g. iso)'
+    description: 'Type of image to build. Supported values: iso, raw, qcow2, vmdk, vdh, ami, gce'
     required: false
     default: 'iso'
   image:
@@ -20,6 +20,10 @@ inputs:
     description: 'Use librepo for downloading packages for the output image. (can break if you are using an old bib image)'
     required: false
     default: false
+  rootfs:
+    description: 'Root filesystem type. Overrides the default from the source container. Supported values: ext4, xfs, btrfs'
+    required: false
+    default: ''
 
 outputs:
   output-directory:
@@ -54,8 +58,8 @@ runs:
       run:
         sudo podman pull ${{ inputs.image }}
 
-    - name: Build ISO
-      if: ${{ inputs.type == 'iso' }}
+    - name: Build Bootable Image
+      if: ${{ inputs.type == 'iso' || inputs.type == 'ami' || inputs.type == 'qcow2' || inputs.type == 'vmdk' || inputs.type == 'raw' || inputs.type == 'vhd' || inputs.type == 'gce' }}
       id: build
       shell: bash
       env:
@@ -63,17 +67,18 @@ runs:
         IMAGE: ${{ inputs.image }}
         BOOTC_IMAGE_BUILDER_IMAGE: ${{ inputs.bootc-image-builder-image }}
         USE_LIBREPO: ${{ inputs.use-librepo }}
+        IMAGE_TYPE: ${{ inputs.type }}
+        ROOTFS: ${{ inputs.rootfs }}
       run: |
         DESIRED_UID=$(id -u)
         DESIRED_GID=$(id -g)
 
         CONFIG_FILE_EXTENSION="${CONFIG_FILE##*.}"
         mkdir -p ./output
-        
-        USE_LIBREPO_FLAG=""
-        if [[ "$USE_LIBREPO" == "true" ]]; then
-          USE_LIBREPO_FLAG="--use-librepo=True"
-        fi
+
+        INPUT_ARGS=""
+        [ "${USE_LIBREPO}" == "true" ] && INPUT_ARGS+="--use-librepo=True "
+        [ -n "${ROOTFS}" ] && INPUT_ARGS+="--rootfs=${ROOTFS} "
 
         sudo podman run \
           --rm \
@@ -84,26 +89,30 @@ runs:
           -v ./output:/output \
           -v /var/lib/containers/storage:/var/lib/containers/storage \
           $BOOTC_IMAGE_BUILDER_IMAGE \
-          --type iso \
+          --type ${IMAGE_TYPE} \
           --local \
           --chown $DESIRED_UID:$DESIRED_GID \
-          $USE_LIBREPO_FLAG \
+          ${INPUT_ARGS} \
           $IMAGE
 
-          ISO_PATH=$(ls ./output/bootiso/*.iso)
+        case "${IMAGE_TYPE}" in
+        "raw"|"ami") OUTPUT_DIRECTORY="./output/image" ;;
+        "iso") OUTPUT_DIRECTORY="./output/bootiso" ;;
+        "vhd") OUTPUT_DIRECTORY="./output/vpc" ;;
+        *) OUTPUT_DIRECTORY="./output/${IMAGE_TYPE}" ;;
+        esac
 
-          # Create a checksum of the output file, stored in the same directory
-          CHECKSUM=$(sha256sum $ISO_PATH | awk '{print $1}')
-          CHECKSUM_PATH=${ISO_PATH}-CHECKSUM
-          echo $CHECKSUM > ${CHECKSUM_PATH}
+        ISO_PATH=(${OUTPUT_DIRECTORY}/*)
 
-          # Get the parent directory of the ISO
-          OUTPUT_DIRECTORY=$(dirname $ISO_PATH)
+        # Create a checksum of the output file, stored in the same directory
+        CHECKSUM=$(sha256sum $ISO_PATH | awk '{print $1}')
+        CHECKSUM_PATH=${ISO_PATH}-CHECKSUM
+        echo $CHECKSUM > ${CHECKSUM_PATH}
 
-          echo "OUTPUT_DIRECTORY=$OUTPUT_DIRECTORY" >> $GITHUB_OUTPUT
-          echo "CHECKSUM=$CHECKSUM" >> $GITHUB_OUTPUT
-          echo "CHECKSUM_PATH=$CHECKSUM_PATH" >> $GITHUB_OUTPUT
-          echo "ISO_PATH=$ISO_PATH" >> $GITHUB_OUTPUT
+        echo "OUTPUT_DIRECTORY=$OUTPUT_DIRECTORY" >> $GITHUB_OUTPUT
+        echo "CHECKSUM=$CHECKSUM" >> $GITHUB_OUTPUT
+        echo "CHECKSUM_PATH=$CHECKSUM_PATH" >> $GITHUB_OUTPUT
+        echo "ISO_PATH=$ISO_PATH" >> $GITHUB_OUTPUT
 
     - name: Set Outputs
       id: set-outputs
