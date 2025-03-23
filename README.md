@@ -1,6 +1,6 @@
 # `@ublue-os/bootc-image-builder-action`
 
-Build bootc images into disk images or ISOs. Currently only ISOs are supported, but contributions are welcome.
+Build bootc container images into bootable disk images or ISOs.
 
 ## Usage
 
@@ -13,7 +13,7 @@ Build bootc images into disk images or ISOs. Currently only ISOs are supported, 
     # Required.
     config-file:
 
-    # The expected artifact type
+    # The expected artifact type. Supported values: iso, raw, qcow2, vmdk, vdh, ami, gce.
     # Optional. Default is 'iso'
     type:
 
@@ -24,6 +24,15 @@ Build bootc images into disk images or ISOs. Currently only ISOs are supported, 
     # The upstream builder image.
     # Optional. Default is 'quay.io/centos-bootc/bootc-image-builder:latest'
     bootc-image-builder-image:
+
+    # Use librepo for downloading packages for the output image. (can break if you are using an old bib image).
+    # Optional. Default is false
+    use-librepo:
+
+    # Override the default root filesystem from the source container. Supported values: ext4, xfs, btrfs.
+    # NOTE: this option is required only if your image does not define a default (e.g. Fedora). See: https://osbuild.org/docs/bootc
+    # Optional. Default is ''
+    rootfs:
 ```
 
 ### Outputs
