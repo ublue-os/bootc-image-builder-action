@@ -77,7 +77,7 @@ runs:
         mkdir -p ./output
 
         INPUT_ARGS=""
-        [ "${USE_LIBREPO}" == "true" ] && INPUT_ARGS+="--use-librepo=True "
+        [ "${USE_LIBREPO}" == "true" ] && INPUT_ARGS+="--use-librepo=True " || INPUT_ARGS+="--use-librepo=False "
         [ -n "${ROOTFS}" ] && INPUT_ARGS+="--rootfs=${ROOTFS} "
 
         sudo podman run \
