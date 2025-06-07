@@ -59,6 +59,8 @@ runs:
 
         if [ -n "${{ inputs.platform }}" ]; then
           echo "PLATFORM=--platform=${{ inputs.platform }}" >> $GITHUB_ENV
+        else
+          echo "PLATFORM=" >> $GITHUB_ENV
         fi
 
     - name: Pull Image
