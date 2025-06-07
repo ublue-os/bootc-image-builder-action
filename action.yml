@@ -24,6 +24,10 @@ inputs:
     description: 'Root filesystem type. Overrides the default from the source container. Supported values: ext4, xfs, btrfs'
     required: false
     default: ''
+  platform:
+    description: 'The platform to build the image for'
+    required: false
+    default: ''
 
 outputs:
   output-directory:
@@ -53,10 +57,16 @@ runs:
         sudo apt install -y sqlite3
         echo "update DBConfig set GraphDriver = 'overlay' where GraphDriver = '';" | sudo sh -c '(cd /var/lib/containers/storage && sqlite3 db.sql)'
 
+        if [ -n "${{ inputs.platform }}" ]; then
+          echo "PLATFORM=--platform=${{ inputs.platform }}" >> $GITHUB_ENV
+        else
+          echo "PLATFORM=" >> $GITHUB_ENV
+        fi
+
     - name: Pull Image
       shell: bash
       run:
-        sudo podman pull ${{ inputs.image }}
+        sudo podman pull ${{ env.PLATFORM }} ${{ inputs.image }}
 
     - name: Build Bootable Image
       if: ${{ inputs.type == 'iso' || inputs.type == 'ami' || inputs.type == 'qcow2' || inputs.type == 'vmdk' || inputs.type == 'raw' || inputs.type == 'vhd' || inputs.type == 'gce' }}
@@ -88,6 +98,7 @@ runs:
           --rm \
           --privileged \
           --pull=newer \
+          ${{ env.PLATFORM }} \
           --security-opt label=type:unconfined_t \
           -v $CONFIG_FILE:/config.$CONFIG_FILE_EXTENSION:ro \
           -v ./output:/output \
